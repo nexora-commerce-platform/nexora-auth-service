@@ -1,0 +1,146 @@
+🧠 Architecture Question
+
+When auth-service starts:
+
+Should it fetch config before registering to Eureka?
+
+Or register first, then fetch config?
+
+Which dependency comes first?
+
+Think in terms of:
+
+Bootstrap phase
+
+Spring Boot lifecycle
+
+Spring Cloud bootstrap context
+
+Answer briefly.
+
+This is where Spring Cloud internals begin. 🚀
+
+===============================================================
+🧠 The Correct Order
+
+When auth-service starts:
+
+✅ 1️⃣ It fetches configuration FIRST
+✅ 2️⃣ Then it registers to Eureka
+
+Config comes before discovery.
+
+🔥 Why?
+
+Because Eureka configuration itself may come from Config Server.
+
+Example:
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/
+
+Where does this config come from?
+
+👉 Config Server.
+
+So the service must:
+
+Contact Config Server
+
+Load external configuration
+
+Build ApplicationContext
+
+THEN initialize Eureka client
+
+THEN register
+
+🧠 Let’s Understand What Happens Internally
+
+When a Spring Cloud service starts:
+
+Phase 1 — Bootstrap Context
+
+Spring creates a special bootstrap context.
+
+This context:
+
+Connects to Config Server
+
+Downloads configuration
+
+Merges properties
+
+Injects them into main environment
+
+Only after that…
+
+Phase 2 — Main Application Context
+
+Now Spring Boot:
+
+Creates beans
+
+Initializes Eureka client
+
+Registers service
+
+Starts embedded server
+
+🏗 Startup Timeline (Very Important)
+
+For auth-service:
+
+Start JVM
+↓
+Create Bootstrap Context
+↓
+Fetch config from Config Server (8888)
+↓
+Merge properties
+↓
+Create Main ApplicationContext
+↓
+Initialize Eureka Client
+↓
+Register to Eureka (8761)
+↓
+Start Tomcat
+↓
+Service is UP
+
+That’s the real order.
+
+🔥 Why This Matters (Senior Insight)
+
+If Config Server is down:
+
+→ Service cannot fetch config
+→ Startup fails
+
+If Eureka is down:
+
+→ Service still starts
+→ But cannot register
+→ Will retry
+
+This is dependency priority.
+
+Config is critical.
+Discovery is optional for startup.
+
+🧠 Now You’re Seeing Architecture Layers
+
+Dependency hierarchy:
+
+Git Repo
+   ↓
+Config Server
+   ↓
+Service (auth)
+   ↓
+Eureka registration
+
+Config is foundational.
