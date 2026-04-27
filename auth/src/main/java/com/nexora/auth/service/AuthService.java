@@ -16,6 +16,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import com.nexora.auth.dto.LoginRequest;
+import com.nexora.auth.dto.LogoutRequest;
 import com.nexora.auth.dto.RegisterRequest;
 import com.nexora.auth.dto.TokenResponse;
 
@@ -109,6 +110,18 @@ public class AuthService {
                 .roles()
                 .realmLevel()
                 .add(List.of(role));
+    }
+
+    public void logOut(LogoutRequest logoutRequest) {
+        String url = serverUrl + "/realms/" + realm + "/protocol/openid-connect/logout";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("client_id", clientId);
+        body.add("client_secret", clientSecret);
+        body.add("refresh_token", logoutRequest.getRefreshToken());
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+        restTemplate.postForEntity(url, request, Object.class);
     }
 
 }
