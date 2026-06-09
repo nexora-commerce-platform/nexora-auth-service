@@ -15,8 +15,10 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import com.nexora.auth.dto.IntroSpectRequest;
 import com.nexora.auth.dto.LoginRequest;
 import com.nexora.auth.dto.LogoutRequest;
+import com.nexora.auth.dto.RefreshToken;
 import com.nexora.auth.dto.RegisterRequest;
 import com.nexora.auth.dto.TokenResponse;
 
@@ -91,6 +93,35 @@ public class AuthService {
                 tokenUrl, entity, TokenResponse.class);
         return response.getBody();
 
+    }
+
+    public TokenResponse refreshToken(RefreshToken refreshTokenRequest) {
+        String tokenUrl = serverUrl + "/realms/" + realm + "/protocol/openid-connect/token";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("grant_type", "refresh_token");
+        body.add("client_id", clientId);
+        body.add("client_secret", clientSecret);
+        body.add("refresh_token", refreshTokenRequest.getRefreshToken());
+        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
+        ResponseEntity<TokenResponse> response = restTemplate.postForEntity(
+                tokenUrl, entity, TokenResponse.class);
+        return response.getBody();
+
+    }
+
+    public TokenResponse validateToken(IntroSpectRequest token) {
+        String introspectUrl = serverUrl + "/realms/" + realm + "/protocol/openid-connect/token/introspect";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("client_id", clientId);
+        body.add("client_secret", clientSecret);
+        body.add("token", token.getToken());
+        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
+        ResponseEntity<TokenResponse> response = restTemplate.postForEntity(introspectUrl, entity, TokenResponse.class);
+        return response.getBody();
     }
 
     private String extractUserId(Response response) {
